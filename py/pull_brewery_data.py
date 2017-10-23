@@ -19,6 +19,11 @@ API_KEY = keys.key_dict["BREWERYDB"]
 
 BASE_URL = "http://api.brewerydb.com/v2"
 
+STATE_LIST = [Alabama, Connecticut, Georgia, Illinois, Indiana, Iowa,
+			  Kentucky, Maryland, Massachusetts, Michigan, Minnesota,
+			  Missouri, New Jersey, New York, Ohio, Pennsylvania,
+			  Rhode Island, Texas, Virginia, Wisconsin
+			  ]
 
 # collates parameters with key, makes request, returns response as JSON
 def get_from_bdb(endpt, options):
@@ -30,13 +35,32 @@ def get_from_bdb(endpt, options):
 
 	return response.json()
 
-# parse JSON dict and return nump array?
-def parse_dict(json_dict):
+# extract latitude longitude tuples from JSON response
+def extract_lat_lon(response):
 
-	df = pd.DataFrame(json_dict)
+	rv = []
 
-	return df
+	for i in 1:len(response['data']):
+		rv.append((response['data'][i]['latitude'], response['data'][i]['longitude']))
 
+	return rv
+
+# loop through state lists, make API requests
+def pull_multiple_states(STATE_LIST, endpt, options):
+
+	# initialize RV here
+
+	for s in STATE_LIST:
+
+		options['region'] = s
+		r = get_from_bdb(endpt, options)
+
+		# extract relevant info
+		lat_lon = extract_lat_lon(r)
+		brand_class = r['brewery']
+
+
+	return #data structure
 
 if __name__ == '__main__':
 	print("glory to AMR")
