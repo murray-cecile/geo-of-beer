@@ -19,48 +19,64 @@ API_KEY = keys.key_dict["BREWERYDB"]
 
 BASE_URL = "http://api.brewerydb.com/v2"
 
-STATE_LIST = [Alabama, Connecticut, Georgia, Illinois, Indiana, Iowa,
-			  Kentucky, Maryland, Massachusetts, Michigan, Minnesota,
-			  Missouri, New Jersey, New York, Ohio, Pennsylvania,
-			  Rhode Island, Texas, Virginia, Wisconsin
+STATE_LIST = ['Alabama', 'Connecticut', 'Georgia', 'Illinois', 'Indiana', 'Iowa',
+			  'Kentucky', 'Maryland', 'Massachusetts', 'Michigan', 'Minnesota',
+			  'Missouri', 'New Jersey', 'New York', 'Ohio', 'Pennsylvania',
+			  'Rhode Island', 'Texas', 'Virginia', 'Wisconsin'
 			  ]
 
 # collates parameters with key, makes request, returns response as JSON
 def get_from_bdb(endpt, options):
 
 	options.update({'key': API_KEY})
-	response = requests.get(BASE_URL + "/" + endpt, params=options)
+	response = requests.get(BASE_URL + "/" + endpt, params = options)
 	
 	response.raise_for_status()
 
 	return response.json()
 
-# extract latitude longitude tuples from JSON response
-def extract_lat_lon(response):
+# extract relevant data from JSON response as pandas data.frame
+def extract_data(response):
 
-	rv = []
+	# extract relevant info from first level
+	st_data = pd.DataFrame(response['data'])
+	st_data = st_data.drop(['brewery', 'country'], axis = 1)
 
-	for i in 1:len(response['data']):
-		rv.append((response['data'][i]['latitude'], response['data'][i]['longitude']))
+	# extract data from brewery subdict
+	detail = []
+	for i in range(0, len(response['data'])):
+		detail.append(pd.DataFrame(response['data'][i]['brewery'],
+			index = response['data'][i]['brewery'].keys()))
+	brew_detail = pd.concat(detail, keys = detail[1].index)
 
+	# concatenate data frames
+	rv = pd.concat([st_data, brew_detail], axis = 0, ignore_index = True)
+	
 	return rv
 
 # loop through state lists, make API requests
-def pull_multiple_states(STATE_LIST, endpt, options):
+def pull_all_states(endpt, num_pages, options):
 
-	# initialize RV here
+	df_list = []
+	options = {}
 
-	for s in STATE_LIST:
+	for p in range(1, num_pages):
 
-		options['region'] = s
+		options.update({'p':p})
 		r = get_from_bdb(endpt, options)
+		
+		st_df = extract_data(r)
+		df_list.append(st_df)
 
-		# extract relevant info
-		lat_lon = extract_lat_lon(r)
-		brand_class = r['brewery']
+	rv = pd.concat(df_list, keys = df_list[0].index)
 
+	#rv = rv.query('region.isin(STATE_LIST)')
 
-	return #data structure
+	return rv
 
 if __name__ == '__main__':
+
+	num_pages = get_from_bdb("locations", {})['numberOfPages']
+	oic_data = pull_all_states("locations", num_pages, {})
+
 	print("glory to AMR")
