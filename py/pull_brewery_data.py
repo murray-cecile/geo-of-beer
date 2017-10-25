@@ -68,15 +68,14 @@ def pull_all_states(endpt, num_pages, options):
 		st_df = extract_data(r)
 		df_list.append(st_df)
 
-	rv = pd.concat(df_list, keys = df_list[0].index)
-
-	#rv = rv.query('region.isin(STATE_LIST)')
-
-	return rv
+	return df_list
 
 if __name__ == '__main__':
 
 	num_pages = get_from_bdb("locations", {})['numberOfPages']
 	oic_data = pull_all_states("locations", num_pages, {})
+
+	master = oic_data[0]
+	master.append(oic_Data[1:len(oic_data)], ignore_index=True)
 
 	print("glory to AMR")
